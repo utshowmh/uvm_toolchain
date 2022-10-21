@@ -1,0 +1,9 @@
+push 0
+push 1
+'loop:
+    # jump 1 index up in the stack and duplicates the value
+    dup 1
+    dup 1
+    add
+    print
+    jmp loop
