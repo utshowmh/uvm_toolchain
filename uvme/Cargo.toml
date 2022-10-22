@@ -1,5 +1,5 @@
 [package]
-name = "uvm_emulator"
+name = "uvme"
 version = "0.1.0"
 edition = "2021"
 

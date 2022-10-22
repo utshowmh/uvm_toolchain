@@ -7,7 +7,7 @@ name = "uvm"
 version = "0.1.0"
 
 [[package]]
-name = "uvm_emulator"
+name = "uvme"
 version = "0.1.0"
 dependencies = [
  "uvm",
