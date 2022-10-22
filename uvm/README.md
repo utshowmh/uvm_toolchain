@@ -13,9 +13,9 @@
 ```
 apt install git
 apt install rust
-git clone https://github.com/utshowmh/ul.git
-cd ul
+git clone https://github.com/utshowmh/uvm.git
+cd uvm
 cargo build --release
 ```
 
-- after running those commands, you should have an executable named 'uvm' and 'usm' in '/target/build/'.
+- after running those commands, you should have a dynamic library named 'uvm' in '/target/build/'.

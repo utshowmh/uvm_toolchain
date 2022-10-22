@@ -26,12 +26,24 @@ impl UVM {
         }
     }
 
+    pub fn emulate(&mut self, filepath: &str, limit: usize) {
+        if let Some(err) = self.load_program_from_file(filepath) {
+            eprintln!("LexingError: {:#?}", err);
+            std::process::exit(1);
+        };
+        for _ in 0..limit {
+            if let Some(err) = self.execute_instruction() {
+                eprintln!("ParsingError: {:#?}", err);
+                exit(1);
+            };
+        }
+    }
+
     pub fn run(&mut self, filepath: &str) {
         if let Some(err) = self.load_program_from_file(filepath) {
             eprintln!("LexingError: {:#?}", err);
             std::process::exit(1);
         };
-        println!("{:#?}", self.program);
         while !self.halt {
             if let Some(err) = self.execute_instruction() {
                 eprintln!("ParsingError: {:#?}", err);
