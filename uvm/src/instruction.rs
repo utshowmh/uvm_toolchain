@@ -12,6 +12,9 @@ pub enum InstructionType {
     JumpIf,
 
     Equal,
+    GreaterEqual,
+    Not,
+
     Add,
     Subtract,
     Multiply,
@@ -19,6 +22,7 @@ pub enum InstructionType {
 
     Dump,
     Output,
+    Outputf,
 
     Halt,
 }

@@ -8,7 +8,7 @@ push 3
 push 4
 push 5
 
-; `dup` jumps 1 index up in the stack and duplicates the value.
+; `dup` jumps <operand> index up in the stack and duplicates the value.
 dup 1
 
 ; `pop` pops out signle value from stack.
@@ -18,16 +18,16 @@ pop
 ; the `sub`, `mul` and `div` works the same way.
 add
 
-; outputs top most item of the stack but doesn't pop it.
+; `out` outputs top most item (as integer) of the stack but doesn't pop it. `outf` does the same. but outputs float
 out
 
-; `swap` pops previous two item from stack and push their swaped version onto the stack after.
-swap
+; `swap` pops previous one item from stack and swapes it with <operand>.
+swp 3
 
 ; `eql` pops previous two item from stack and push their 0 or 1 based on wheather they're equal or not onto the stack after. 
 
 ; `dump` outputs the whole stack.
-dump
+dmp
 
 ; loop is just an orbitary label name (gotta start with `.` and end with `:`). it's like a varible's name.
 .loop:

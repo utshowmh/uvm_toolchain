@@ -32,6 +32,9 @@ impl UVM {
             std::process::exit(1);
         };
         for _ in 0..limit {
+            if self.halt {
+                break;
+            }
             if let Some(err) = self.execute_instruction() {
                 eprintln!("ParsingError: {:#?}", err);
                 exit(1);
@@ -89,10 +92,16 @@ impl UVM {
                                 .push(Instruction::new(InstructionType::Equal, None));
                         }
 
-                        "swap" => {
+                        "geql" => {
                             instruction_index += 1;
                             self.program
-                                .push(Instruction::new(InstructionType::Swap, None));
+                                .push(Instruction::new(InstructionType::GreaterEqual, None));
+                        }
+
+                        "not" => {
+                            instruction_index += 1;
+                            self.program
+                                .push(Instruction::new(InstructionType::Not, None));
                         }
 
                         "add" => {
@@ -125,13 +134,19 @@ impl UVM {
                                 .push(Instruction::new(InstructionType::Output, None));
                         }
 
-                        "dump" => {
+                        "outf" => {
+                            instruction_index += 1;
+                            self.program
+                                .push(Instruction::new(InstructionType::Outputf, None));
+                        }
+
+                        "dmp" => {
                             instruction_index += 1;
                             self.program
                                 .push(Instruction::new(InstructionType::Dump, None));
                         }
 
-                        "halt" => {
+                        "hlt" => {
                             instruction_index += 1;
                             self.program
                                 .push(Instruction::new(InstructionType::Halt, None));
@@ -180,6 +195,12 @@ impl UVM {
                             instruction_index += 1;
                             self.program
                                 .push(Instruction::new(InstructionType::Duplicate, Some(operand)));
+                        }
+
+                        "swp" => {
+                            instruction_index += 1;
+                            self.program
+                                .push(Instruction::new(InstructionType::Swap, Some(operand)));
                         }
 
                         "jmp" => {
@@ -254,14 +275,21 @@ impl UVM {
             InstructionType::Swap => {
                 self.instruction_pointer += 1;
 
-                if self.stack.len() < 2 {
-                    return Some(ParsingError::StackUnderflow);
+                if let Some(instruction_pointer) = instruction.operand {
+                    let stack_length = self.stack.len() as Float;
+                    if stack_length - instruction_pointer < 1. {
+                        return Some(ParsingError::StackUnderflow);
+                    }
+                    if instruction_pointer <= 0. {
+                        return Some(ParsingError::IllegalOperand);
+                    } else {
+                        // it's performing a relative swap; swaping <operand> and pop.
+                        let a = self.stack[(stack_length - 1. - instruction_pointer) as usize];
+                        let b = self.stack.pop().unwrap();
+                        self.stack[(stack_length - 1. - instruction_pointer) as usize] = b;
+                        self.stack.push(a);
+                    }
                 }
-
-                let a = self.stack.pop().unwrap();
-                let b = self.stack.pop().unwrap();
-                self.stack.push(a);
-                self.stack.push(b);
             }
 
             InstructionType::Add => {
@@ -329,6 +357,30 @@ impl UVM {
                 self.stack.push(((a == b) as Integer) as Float);
             }
 
+            InstructionType::GreaterEqual => {
+                self.instruction_pointer += 1;
+
+                if self.stack.len() < 2 {
+                    return Some(ParsingError::StackUnderflow);
+                }
+
+                let b = self.stack.pop().unwrap();
+                let a = self.stack.pop().unwrap();
+                self.stack.push(((a >= b) as Integer) as Float);
+            }
+
+            InstructionType::Not => {
+                self.instruction_pointer += 1;
+
+                if self.stack.len() < 1 {
+                    return Some(ParsingError::StackUnderflow);
+                }
+
+                let a = self.stack.pop().unwrap();
+                let a = (!(a != 0.) as Integer) as Float;
+                self.stack.push(a);
+            }
+
             InstructionType::Jump => {
                 if let Some(jump_to) = instruction.operand {
                     self.instruction_pointer = jump_to as usize;
@@ -364,6 +416,18 @@ impl UVM {
 
                 let a = self.stack.pop().unwrap();
                 println!("{}", a);
+                self.stack.push(a);
+            }
+
+            InstructionType::Outputf => {
+                self.instruction_pointer += 1;
+
+                if self.stack.len() < 1 {
+                    return Some(ParsingError::StackUnderflow);
+                }
+
+                let a = self.stack.pop().unwrap();
+                println!("{:.15}", a);
                 self.stack.push(a);
             }
 
