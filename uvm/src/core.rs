@@ -31,6 +31,7 @@ impl UVM {
             eprintln!("LexingError: {:#?}", err);
             std::process::exit(1);
         };
+        println!("{:#?}", self.program);
         while !self.halt {
             if let Some(err) = self.execute_instruction() {
                 eprintln!("ParsingError: {:#?}", err);
@@ -45,8 +46,9 @@ impl UVM {
             exit(1);
         });
         let instructions = source.trim().split("\n");
+        let mut instruction_index = 0;
 
-        for (instruction_index, instruction) in instructions.enumerate() {
+        for instruction in instructions {
             let instruction: Vec<&str> = instruction.trim().split(" ").collect();
             let instruction_len = instruction.len();
 
@@ -64,51 +66,61 @@ impl UVM {
 
                     match operation {
                         "pop" => {
+                            instruction_index += 1;
                             self.program
                                 .push(Instruction::new(InstructionType::Pop, None));
                         }
 
                         "eql" => {
+                            instruction_index += 1;
                             self.program
                                 .push(Instruction::new(InstructionType::Equal, None));
                         }
 
                         "swap" => {
+                            instruction_index += 1;
                             self.program
                                 .push(Instruction::new(InstructionType::Swap, None));
                         }
 
                         "add" => {
+                            instruction_index += 1;
                             self.program
                                 .push(Instruction::new(InstructionType::Add, None));
                         }
 
                         "sub" => {
+                            instruction_index += 1;
                             self.program
                                 .push(Instruction::new(InstructionType::Subtract, None));
                         }
 
                         "mul" => {
+                            instruction_index += 1;
                             self.program
                                 .push(Instruction::new(InstructionType::Multiply, None));
                         }
 
                         "div" => {
+                            instruction_index += 1;
                             self.program
                                 .push(Instruction::new(InstructionType::Divide, None));
                         }
 
                         "out" => {
+                            instruction_index += 1;
                             self.program
                                 .push(Instruction::new(InstructionType::Output, None));
                         }
 
                         "dump" => {
+                            instruction_index += 1;
                             self.program
                                 .push(Instruction::new(InstructionType::Dump, None));
                         }
 
                         "halt" => {
+                            instruction_index += 1;
                             self.program
                                 .push(Instruction::new(InstructionType::Halt, None));
                         }
@@ -140,7 +152,6 @@ impl UVM {
                             if let Some(operand) = self.label_table.find(operand) {
                                 operand as Float
                             } else {
-                                println!("{} -> {}", operand, instruction_index);
                                 return Some(LexingError::IllegalOperand);
                             }
                         }
@@ -148,21 +159,25 @@ impl UVM {
 
                     match operation {
                         "push" => {
+                            instruction_index += 1;
                             self.program
                                 .push(Instruction::new(InstructionType::Push, Some(operand)));
                         }
 
                         "dup" => {
+                            instruction_index += 1;
                             self.program
                                 .push(Instruction::new(InstructionType::Duplicate, Some(operand)));
                         }
 
                         "jmp" => {
+                            instruction_index += 1;
                             self.program
                                 .push(Instruction::new(InstructionType::Jump, Some(operand)));
                         }
 
                         "jmpif" => {
+                            instruction_index += 1;
                             self.program
                                 .push(Instruction::new(InstructionType::JumpIf, Some(operand)));
                         }

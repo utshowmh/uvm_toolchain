@@ -29,12 +29,13 @@ swap
 ; `dump` outputs the whole stack.
 dump
 
-; `halt` stops execution.
-halt
-
 ; loop is just an orbitary label name (gotta start with `.` and end with `:`). it's like a varible's name.
 .loop:
-    ; jumps to the label `loop` if stack's top most item is 0.
+    ; `jmpif` jumps to the label `loop` if stack's top most item is 0.
     jmpif loop
-    ; jumps to the label `loop`.
+    ; `jmp` jumps to the label `loop`.
+    ; for this specific case, this jump will create an infinite loop
     jmp loop
+
+; `halt` stops execution.
+halt
