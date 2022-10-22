@@ -2,13 +2,13 @@ use std::{fs::read_to_string, process::exit};
 
 use crate::{
     error::{LexingError, ParsingError},
-    global::Integer,
+    global::{Float, Integer},
     instruction::{Instruction, InstructionType},
     label::{Label, LabelTable},
 };
 
 pub struct UVM {
-    stack: Vec<Integer>,
+    stack: Vec<Float>,
     program: Vec<Instruction>,
     instruction_pointer: usize,
     label_table: LabelTable,
@@ -50,47 +50,73 @@ impl UVM {
             let instruction: Vec<&str> = instruction.trim().split(" ").collect();
             let instruction_len = instruction.len();
 
+            if instruction_len > 1 && instruction[0].starts_with(";") {
+                continue;
+            }
+
             match instruction_len {
                 1 => {
                     let operation = instruction[0].trim();
+
+                    if operation.is_empty() {
+                        continue;
+                    }
 
                     match operation {
                         "pop" => {
                             self.program
                                 .push(Instruction::new(InstructionType::Pop, None));
                         }
+
                         "eql" => {
                             self.program
                                 .push(Instruction::new(InstructionType::Equal, None));
                         }
+
+                        "swap" => {
+                            self.program
+                                .push(Instruction::new(InstructionType::Swap, None));
+                        }
+
                         "add" => {
                             self.program
                                 .push(Instruction::new(InstructionType::Add, None));
                         }
+
                         "sub" => {
                             self.program
                                 .push(Instruction::new(InstructionType::Subtract, None));
                         }
+
                         "mul" => {
                             self.program
                                 .push(Instruction::new(InstructionType::Multiply, None));
                         }
+
                         "div" => {
                             self.program
                                 .push(Instruction::new(InstructionType::Divide, None));
                         }
-                        "print" => {
+
+                        "out" => {
                             self.program
-                                .push(Instruction::new(InstructionType::Print, None));
+                                .push(Instruction::new(InstructionType::Output, None));
                         }
+
+                        "dump" => {
+                            self.program
+                                .push(Instruction::new(InstructionType::Dump, None));
+                        }
+
                         "halt" => {
                             self.program
                                 .push(Instruction::new(InstructionType::Halt, None));
                         }
+
                         _ => {
-                            if operation.starts_with("'") && operation.ends_with(":") {
+                            if operation.starts_with(".") && operation.ends_with(":") {
                                 let label_name = instruction[0]
-                                    .strip_prefix("'")
+                                    .strip_prefix(".")
                                     .unwrap()
                                     .strip_suffix(":")
                                     .unwrap()
@@ -103,16 +129,18 @@ impl UVM {
                         }
                     }
                 }
+
                 2 => {
                     let operation = instruction[0].trim();
                     let operand = instruction[1].trim();
 
-                    let operand: i64 = match operand.parse() {
+                    let operand: Float = match operand.parse() {
                         Ok(operand) => operand,
                         Err(_) => {
                             if let Some(operand) = self.label_table.find(operand) {
-                                operand as Integer
+                                operand as Float
                             } else {
+                                println!("{} -> {}", operand, instruction_index);
                                 return Some(LexingError::IllegalOperand);
                             }
                         }
@@ -123,32 +151,29 @@ impl UVM {
                             self.program
                                 .push(Instruction::new(InstructionType::Push, Some(operand)));
                         }
+
                         "dup" => {
                             self.program
                                 .push(Instruction::new(InstructionType::Duplicate, Some(operand)));
                         }
+
                         "jmp" => {
                             self.program
                                 .push(Instruction::new(InstructionType::Jump, Some(operand)));
                         }
+
                         "jmpif" => {
                             self.program
                                 .push(Instruction::new(InstructionType::JumpIf, Some(operand)));
                         }
+
                         _ => {
                             return Some(LexingError::IllegalOperation);
                         }
                     }
                 }
-                _ => {
-                    if (instruction_len > 1 && instruction[0].starts_with("#"))
-                        || instruction_len == 0
-                    {
-                        continue;
-                    } else {
-                        return Some(LexingError::IllegalOperand);
-                    }
-                }
+
+                _ => return Some(LexingError::IllegalOperand),
             }
         }
         None
@@ -170,6 +195,7 @@ impl UVM {
                     return Some(ParsingError::IllegalOperand);
                 }
             }
+
             InstructionType::Pop => {
                 self.instruction_pointer += 1;
 
@@ -179,22 +205,38 @@ impl UVM {
 
                 self.stack.pop();
             }
+
             InstructionType::Duplicate => {
                 self.instruction_pointer += 1;
 
                 if let Some(instruction_pointer) = instruction.operand {
-                    let stack_length = self.stack.len() as i64;
-                    if stack_length - instruction_pointer < 1 {
+                    let stack_length = self.stack.len() as Float;
+                    if stack_length - instruction_pointer < 1. {
                         return Some(ParsingError::StackUnderflow);
                     }
-                    if instruction_pointer < 0 {
+                    if instruction_pointer < 0. {
                         return Some(ParsingError::IllegalOperand);
                     } else {
+                        // it's performing a relative jump; jumping <operand> up.
                         self.stack
-                            .push(self.stack[(stack_length - 1 - instruction_pointer) as usize]);
+                            .push(self.stack[(stack_length - 1. - instruction_pointer) as usize]);
                     }
                 }
             }
+
+            InstructionType::Swap => {
+                self.instruction_pointer += 1;
+
+                if self.stack.len() < 2 {
+                    return Some(ParsingError::StackUnderflow);
+                }
+
+                let a = self.stack.pop().unwrap();
+                let b = self.stack.pop().unwrap();
+                self.stack.push(a);
+                self.stack.push(b);
+            }
+
             InstructionType::Add => {
                 self.instruction_pointer += 1;
 
@@ -206,6 +248,7 @@ impl UVM {
                 let a = self.stack.pop().unwrap();
                 self.stack.push(a + b);
             }
+
             InstructionType::Subtract => {
                 self.instruction_pointer += 1;
 
@@ -217,6 +260,7 @@ impl UVM {
                 let a = self.stack.pop().unwrap();
                 self.stack.push(a - b);
             }
+
             InstructionType::Multiply => {
                 self.instruction_pointer += 1;
 
@@ -228,6 +272,7 @@ impl UVM {
                 let a = self.stack.pop().unwrap();
                 self.stack.push(a * b);
             }
+
             InstructionType::Divide => {
                 self.instruction_pointer += 1;
 
@@ -238,12 +283,13 @@ impl UVM {
                 let b = self.stack.pop().unwrap();
                 let a = self.stack.pop().unwrap();
 
-                if b == 0 {
+                if b == 0. {
                     return Some(ParsingError::DivisionByZero);
                 }
 
                 self.stack.push(a / b);
             }
+
             InstructionType::Equal => {
                 self.instruction_pointer += 1;
 
@@ -253,8 +299,9 @@ impl UVM {
 
                 let b = self.stack.pop().unwrap();
                 let a = self.stack.pop().unwrap();
-                self.stack.push((a == b) as i64);
+                self.stack.push(((a == b) as Integer) as Float);
             }
+
             InstructionType::Jump => {
                 if let Some(jump_to) = instruction.operand {
                     self.instruction_pointer = jump_to as usize;
@@ -262,6 +309,7 @@ impl UVM {
                     return Some(ParsingError::IllegalOperand);
                 }
             }
+
             InstructionType::JumpIf => {
                 self.instruction_pointer += 1;
 
@@ -272,14 +320,15 @@ impl UVM {
                 let a = self.stack.pop().unwrap();
                 self.stack.push(a);
                 if let Some(jump_to) = instruction.operand {
-                    if a != 0 {
+                    if a != 0. {
                         self.instruction_pointer = jump_to as usize;
                     }
                 } else {
                     return Some(ParsingError::IllegalOperand);
                 }
             }
-            InstructionType::Print => {
+
+            InstructionType::Output => {
                 self.instruction_pointer += 1;
 
                 if self.stack.len() < 1 {
@@ -290,6 +339,13 @@ impl UVM {
                 println!("{}", a);
                 self.stack.push(a);
             }
+
+            InstructionType::Dump => {
+                self.instruction_pointer += 1;
+
+                println!("stack: {:#?}", self.stack);
+            }
+
             InstructionType::Halt => {
                 self.halt = true;
             }

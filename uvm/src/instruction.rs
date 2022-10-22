@@ -1,10 +1,13 @@
-use crate::global::Integer;
+use crate::global::Float;
 
 #[derive(Debug)]
 pub enum InstructionType {
     Push,
     Pop,
+
     Duplicate,
+    Swap,
+
     Jump,
     JumpIf,
 
@@ -13,18 +16,21 @@ pub enum InstructionType {
     Subtract,
     Multiply,
     Divide,
-    Print,
+
+    Dump,
+    Output,
+
     Halt,
 }
 
 #[derive(Debug)]
 pub struct Instruction {
     pub instruction_type: InstructionType,
-    pub operand: Option<Integer>,
+    pub operand: Option<Float>,
 }
 
 impl Instruction {
-    pub fn new(instruction_type: InstructionType, operand: Option<Integer>) -> Self {
+    pub fn new(instruction_type: InstructionType, operand: Option<Float>) -> Self {
         Self {
             instruction_type,
             operand,
